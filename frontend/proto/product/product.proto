@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package product;
+
+option go_package = "github.com/shirloin/stockhub/proto/product";
+
+message Product{
+    string uuid = 1;
+    string title = 2;
+    string description = 3;
+    int32 price = 4;
+    int32 stock = 5;
+    int32 low_stock_threshold = 6;
+    string sku = 7;
+    string barcode = 8;
+    string updated_at = 9;
+    string created_at = 10;
+}
+
+message StockAlert{
+    string product_uuid = 1;
+    string product_title = 2;
+    int32 current_stock = 3;
+    int32 threshold = 4;
+    string alert_type = 5; // "low_stock" or "out_of_stock"
+    string timestamp = 6;
+}
+
+message PriceUpdate{
+    repeated Product products = 1;
+    string timestamp = 2;
+}
+
+message WatchStockAlertsRequest{
+
+}
+
+message StockAlertUpdate{
+    repeated StockAlert alerts = 1;
+    string timestamp = 2;
+}
+
+message WatchTopProductsByPriceRequest{
+    int32 limit = 1; // 0 means no limit
+}
+
+service ProductService{
+    rpc WatchStockAlerts(WatchStockAlertsRequest) returns (stream StockAlertUpdate);
+    rpc WatchTopProductsByPrice(WatchTopProductsByPriceRequest) returns (stream PriceUpdate);
+}

@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package warehouse;
+
+option go_package = "proto/warehouse";
+
+message Warehouse {
+    string uuid = 1;
+    string name = 2;
+    string address = 3;
+    string city = 4;
+    string state = 5;
+    string country = 6;
+    string postal_code = 7;
+    string manager_name = 8;
+    string manager_email = 9;
+    string manager_phone = 10;
+    int32 capacity = 11;
+    bool is_active = 12;
+    string created_at = 13;
+    string updated_at = 14;
+}
+
+message WarehouseWithMetrics {
+    Warehouse warehouse = 1;
+    int32 total_stock = 2;
+    double utilization = 3;
+}
+
+message WatchWarehousesRequest {
+    bool include_metrics = 1;
+    int32 limit = 2; // 0 means no limit
+}
+
+message WarehouseUpdate {
+    repeated WarehouseWithMetrics warehouses = 1;
+    string timestamp = 2;
+}
+
+service WarehouseService {
+    rpc WatchWarehouses(WatchWarehousesRequest) returns (stream WarehouseUpdate);
+}
+

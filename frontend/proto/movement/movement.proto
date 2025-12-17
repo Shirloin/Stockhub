@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package movement;
+
+option go_package = "github.com/shirloin/stockhub/proto/movement";
+
+message Product {
+    string uuid = 1;
+    string title = 2;
+}
+
+message Warehouse {
+    string uuid = 1;
+    string name = 2;
+}
+
+message StockMovement {
+    string uuid = 1;
+    string product_uuid = 2;
+    string warehouse_uuid = 3;
+    Product product = 4;
+    Warehouse warehouse = 5;
+    string movement_type = 6; // STOCK_IN, STOCK_OUT, TRANSFER, ADJUSTMENT
+    int32 quantity = 7;
+    int32 previous_qty = 8;
+    int32 new_qty = 9;
+    string reference_number = 10;
+    string to_warehouse_uuid = 11;
+    string adjustment_reason = 12;
+    string notes = 13;
+    string created_by = 14;
+    string movement_date = 15;
+    string created_at = 16;
+    string updated_at = 17;
+}
+
+message WatchMovementsRequest {
+    int32 limit = 1; // 0 means no limit
+}
+
+message MovementUpdate {
+    repeated StockMovement movements = 1;
+    string timestamp = 2;
+}
+
+service MovementService {
+    rpc WatchMovements(WatchMovementsRequest) returns (stream MovementUpdate);
+}
+
