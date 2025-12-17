@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useGetWarehouses } from "@/hooks/use-warehouse";
 import type Warehouse from "@/types/warehouse";
 import CreateWarehouseModal from "./create-warehouse-modal";
@@ -109,9 +108,7 @@ export default function WarehouseList() {
                   <TableCell>
                     {warehouse.capacity ? (
                       <div className="text-sm space-y-1">
-                        <div>
-                          {warehouse.capacity.toLocaleString()} units
-                        </div>
+                        <div>{warehouse.capacity.toLocaleString()} units</div>
                         {warehouse.totalStock !== undefined && (
                           <div className="text-xs text-muted-foreground">
                             Used: {warehouse.totalStock.toLocaleString()} units

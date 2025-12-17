@@ -31,7 +31,9 @@ export class ProductServiceClient implements IProductServiceClient, ServiceInfo 
     typeName = ProductService.typeName;
     methods = ProductService.methods;
     options = ProductService.options;
-    constructor(private readonly _transport: RpcTransport) {
+    private readonly _transport: RpcTransport;
+    constructor(_transport: RpcTransport) {
+        this._transport = _transport;
     }
     /**
      * @generated from protobuf rpc: WatchStockAlerts

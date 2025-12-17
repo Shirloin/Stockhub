@@ -1,25 +1,29 @@
-import { useState } from "react";
 import { useGetCategories } from "@/hooks/use-category";
 import type Category from "@/types/category";
 import CreateCategoryModal from "./create-category-modal";
 import UpdateCategoryModal from "./update-category-modal";
 import DeleteCategoryModal from "./delete-category-modal";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useCategoryStore } from "@/stores/category-store";
-import { LayoutGrid, List } from "lucide-react";
-
-type ViewMode = "grid" | "table";
 
 export default function CategoryList() {
   const { data: categories, isLoading, error } = useGetCategories();
-  const [viewMode, setViewMode] = useState<ViewMode>("table");
   const { setSelectedCategory } = useCategoryStore();
 
   if (isLoading) {
     return (
       <div className="container mx-auto py-8">
-        <div className="text-center text-muted-foreground">Loading categories...</div>
+        <div className="text-center text-muted-foreground">
+          Loading categories...
+        </div>
       </div>
     );
   }
@@ -27,7 +31,9 @@ export default function CategoryList() {
   if (error) {
     return (
       <div className="container mx-auto py-8">
-        <div className="text-center text-destructive">Error: {error.message}</div>
+        <div className="text-center text-destructive">
+          Error: {error.message}
+        </div>
       </div>
     );
   }
@@ -87,7 +93,9 @@ export default function CategoryList() {
       ) : (
         <div className="text-center py-12 text-muted-foreground border rounded-lg">
           <p className="text-lg">No categories found.</p>
-          <p className="text-sm mt-2">Create your first category to get started.</p>
+          <p className="text-sm mt-2">
+            Create your first category to get started.
+          </p>
         </div>
       )}
 
@@ -96,4 +104,3 @@ export default function CategoryList() {
     </div>
   );
 }
-

@@ -1,0 +1,14 @@
+services:
+  stockhub-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: "http://localhost:7788/api"
+        VITE_GRPC_URL: "http://localhost:50051"
+    image: crpi-pnda4wyku982ifaa.ap-southeast-5.personal.cr.aliyuncs.com/shirloin/stockhub-frontend
+    container_name: stockhub-frontend
+    pull_policy: always
+    ports:
+      - "1234:80"
+    restart: always

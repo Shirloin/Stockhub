@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function DeleteProductModal() {
-  const deleteProduct = useDeleteProduct();
+  const { mutate: deleteProduct, isPending } = useDeleteProduct();
   const { selectedProduct, clearSelectedProduct } = useProductStore();
   const productToDelete =
     selectedProduct?.action === "delete" ? selectedProduct.product : null;
@@ -24,10 +24,10 @@ export default function DeleteProductModal() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!productToDelete) return;
+  const handleDelete = () => {
+    if (!productToDelete?.uuid) return;
     try {
-      await deleteProduct.mutateAsync(productToDelete.uuid);
+      deleteProduct(productToDelete.uuid);
       clearSelectedProduct();
     } catch (error) {
       console.error("Failed to delete product:", error);
@@ -52,9 +52,9 @@ export default function DeleteProductModal() {
           <AlertDialogAction
             onClick={handleDelete}
             className="bg-black text-white hover:bg-black/90"
-            disabled={deleteProduct.isPending}
+            disabled={isPending}
           >
-            {deleteProduct.isPending ? "Deleting..." : "Delete"}
+            {isPending ? "Deleting..." : "Delete"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

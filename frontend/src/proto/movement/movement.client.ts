@@ -25,7 +25,9 @@ export class MovementServiceClient implements IMovementServiceClient, ServiceInf
     typeName = MovementService.typeName;
     methods = MovementService.methods;
     options = MovementService.options;
-    constructor(private readonly _transport: RpcTransport) {
+    private readonly _transport: RpcTransport;
+    constructor(_transport: RpcTransport) {
+        this._transport = _transport;
     }
     /**
      * @generated from protobuf rpc: WatchMovements

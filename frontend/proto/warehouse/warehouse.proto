@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package warehouse;
 
-option go_package = "github.com/shirloin/stockhub/proto/warehouse";
+option go_package = "proto/warehouse";
 
 message Warehouse {
     string uuid = 1;

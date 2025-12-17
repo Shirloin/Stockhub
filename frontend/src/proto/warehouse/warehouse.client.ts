@@ -7,8 +7,6 @@ import { WarehouseService } from "./warehouse";
 import { stackIntercept } from "@protobuf-ts/runtime-rpc";
 import type { WarehouseUpdate } from "./warehouse";
 import type { WatchWarehousesRequest } from "./warehouse";
-import type { WatchWarehouseCountRequest } from "./warehouse";
-import type { WarehouseCountUpdate } from "./warehouse";
 import type { ServerStreamingCall } from "@protobuf-ts/runtime-rpc";
 import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
 /**
@@ -19,10 +17,6 @@ export interface IWarehouseServiceClient {
      * @generated from protobuf rpc: WatchWarehouses
      */
     watchWarehouses(input: WatchWarehousesRequest, options?: RpcOptions): ServerStreamingCall<WatchWarehousesRequest, WarehouseUpdate>;
-    /**
-     * @generated from protobuf rpc: WatchWarehouseCount
-     */
-    watchWarehouseCount(input: WatchWarehouseCountRequest, options?: RpcOptions): ServerStreamingCall<WatchWarehouseCountRequest, WarehouseCountUpdate>;
 }
 /**
  * @generated from protobuf service warehouse.WarehouseService
@@ -31,7 +25,9 @@ export class WarehouseServiceClient implements IWarehouseServiceClient, ServiceI
     typeName = WarehouseService.typeName;
     methods = WarehouseService.methods;
     options = WarehouseService.options;
-    constructor(private readonly _transport: RpcTransport) {
+    private readonly _transport: RpcTransport;
+    constructor(_transport: RpcTransport) {
+        this._transport = _transport;
     }
     /**
      * @generated from protobuf rpc: WatchWarehouses
@@ -39,12 +35,5 @@ export class WarehouseServiceClient implements IWarehouseServiceClient, ServiceI
     watchWarehouses(input: WatchWarehousesRequest, options?: RpcOptions): ServerStreamingCall<WatchWarehousesRequest, WarehouseUpdate> {
         const method = this.methods[0], opt = this._transport.mergeOptions(options);
         return stackIntercept<WatchWarehousesRequest, WarehouseUpdate>("serverStreaming", this._transport, method, opt, input);
-    }
-    /**
-     * @generated from protobuf rpc: WatchWarehouseCount
-     */
-    watchWarehouseCount(input: WatchWarehouseCountRequest, options?: RpcOptions): ServerStreamingCall<WatchWarehouseCountRequest, WarehouseCountUpdate> {
-        const method = this.methods[1], opt = this._transport.mergeOptions(options);
-        return stackIntercept<WatchWarehouseCountRequest, WarehouseCountUpdate>("serverStreaming", this._transport, method, opt, input);
     }
 }
