@@ -8,12 +8,6 @@ services:
     ports:
       - "7788:7788"
       - "50051:50051"
-    environment:
-      # Connect to local database (host.docker.internal works on Windows/Mac)
-      # For Linux, you may need to use network_mode: host instead
-      DATABASE_URL: postgres://postgres:postgres@host.docker.internal:5432/stockhub?sslmode=disable
-      PORT: :7788
-      GRPC_PORT: :50051
+    env_file:
+      - .env
     restart: always
-    # Uncomment the line below if you're on Linux and host.docker.internal doesn't work
-    # network_mode: host

@@ -15,7 +15,7 @@ import (
 func main() {
 	cfg := config.Load()
 	mux := config.NewMux()
-	corsConfig := config.NewCORSConfig()
+	corsConfig := config.NewCORSConfig(cfg)
 	grpcServer := config.NewGRPCServer()
 	db, err := database.GetInstance()
 	if err != nil {
@@ -33,15 +33,7 @@ func main() {
 
 	config.Bootstrap(&bootstrapConfig)
 
-	wrappedGrpc := grpcweb.WrapServer(grpcServer,
-		grpcweb.WithOriginFunc(func(origin string) bool {
-			return true
-		}),
-		grpcweb.WithWebsockets(true),
-		grpcweb.WithWebsocketOriginFunc(func(req *http.Request) bool {
-			return true
-		}),
-	)
+	wrappedGrpc := corsConfig.SetupGRPCCORS(grpcServer)
 
 	go startHTTPServer(cfg.PORT, bootstrapConfig.Handler)
 	go startGRPCServer(cfg.GRPC_PORT, wrappedGrpc)
