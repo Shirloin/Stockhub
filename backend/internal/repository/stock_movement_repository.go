@@ -44,6 +44,56 @@ func (r *StockMovementRepository) GetAll(ctx context.Context, limit int) ([]doma
 	return movements, nil
 }
 
+func (r *StockMovementRepository) GetAllPaginated(ctx context.Context, page, limit int) ([]domain.StockMovement, error) {
+	var movements []domain.StockMovement
+	offset := (page - 1) * limit
+	if err := r.db.WithContext(ctx).
+		Preload("Product").Preload("Warehouse").
+		Order("movement_date DESC, created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&movements).Error; err != nil {
+		return nil, err
+	}
+	return movements, nil
+}
+
+func (r *StockMovementRepository) Count(ctx context.Context) (int64, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).
+		Model(&domain.StockMovement{}).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (r *StockMovementRepository) GetByTypePaginated(ctx context.Context, movementType domain.StockMovementType, page, limit int) ([]domain.StockMovement, error) {
+	var movements []domain.StockMovement
+	offset := (page - 1) * limit
+	if err := r.db.WithContext(ctx).
+		Preload("Product").Preload("Warehouse").
+		Where("movement_type = ?", movementType).
+		Order("movement_date DESC, created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&movements).Error; err != nil {
+		return nil, err
+	}
+	return movements, nil
+}
+
+func (r *StockMovementRepository) CountByType(ctx context.Context, movementType domain.StockMovementType) (int64, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).
+		Model(&domain.StockMovement{}).
+		Where("movement_type = ?", movementType).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func (r *StockMovementRepository) GetByWarehouse(ctx context.Context, warehouseUUID string, limit int) ([]domain.StockMovement, error) {
 	var movements []domain.StockMovement
 	query := r.db.WithContext(ctx).

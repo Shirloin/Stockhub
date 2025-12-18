@@ -15,7 +15,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-function UpdateCategoryForm({ categoryToUpdate }: { categoryToUpdate: Category }) {
+function UpdateCategoryForm({
+  categoryToUpdate,
+}: {
+  categoryToUpdate: Category;
+}) {
   const updateCategory = useUpdateCategory();
   const { clearSelectedCategory } = useCategoryStore();
 
@@ -48,9 +52,7 @@ function UpdateCategoryForm({ categoryToUpdate }: { categoryToUpdate: Category }
           <Input
             id="update-name"
             value={formData.name}
-            onChange={(e) =>
-              setFormData({ ...formData, name: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             placeholder="Enter category name"
             required
           />
@@ -103,7 +105,7 @@ export default function UpdateCategoryModal() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Update Category</DialogTitle>
           <DialogDescription>
@@ -111,13 +113,14 @@ export default function UpdateCategoryModal() {
           </DialogDescription>
         </DialogHeader>
         {categoryToUpdate && (
-          <UpdateCategoryForm
-            key={categoryToUpdate.uuid}
-            categoryToUpdate={categoryToUpdate}
-          />
+          <div className="overflow-y-auto thin-scrollbar flex-1 min-h-0">
+            <UpdateCategoryForm
+              key={categoryToUpdate.uuid}
+              categoryToUpdate={categoryToUpdate}
+            />
+          </div>
         )}
       </DialogContent>
     </Dialog>
   );
 }
-

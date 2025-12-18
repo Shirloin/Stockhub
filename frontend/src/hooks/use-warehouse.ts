@@ -1,4 +1,4 @@
-import { createWarehouse, getWarehouses, getWarehouseStock, addStock, transferStock, updateWarehouse, deleteWarehouse } from "@/api/warehouse";
+import { createWarehouse, getWarehouses, getWarehousesPaginated, getWarehouseStock, addStock, transferStock, updateWarehouse, deleteWarehouse } from "@/api/warehouse";
 import type Warehouse from "@/types/warehouse";
 import type { WarehouseStock, StockTransfer } from "@/types/warehouse";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -42,6 +42,15 @@ export const useGetWarehouses = (includeMetrics: boolean = false, limit?: number
         queryKey: ['warehouses', includeMetrics, limit],
         queryFn: async () => {
             return await getWarehouses(includeMetrics, limit);
+        },
+    })
+}
+
+export const useGetWarehousesPaginated = (page: number = 1, limit: number = 10, includeMetrics: boolean = false) => {
+    return useQuery({
+        queryKey: ['warehouses', 'paginated', page, limit, includeMetrics],
+        queryFn: async () => {
+            return await getWarehousesPaginated(page, limit, includeMetrics);
         },
     })
 }

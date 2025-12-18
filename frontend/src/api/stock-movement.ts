@@ -7,11 +7,34 @@ interface ApiResponse<T> {
     data: T;
 }
 
+export interface PaginatedResponse<T> {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    items: T[];
+}
+
 // Stock Movements (Audit Trail)
 export const getStockMovements = async (limit?: number): Promise<StockMovement[]> => {
     const params = limit ? `?limit=${limit}` : '';
     const response = await axios.get<ApiResponse<StockMovement[]>>(`/stock-movements${params}`);
     return response.data.data;
+}
+
+export const getStockMovementsPaginated = async (
+    page: number = 1,
+    limit: number = 10,
+    type?: StockMovementType | "ALL"
+): Promise<PaginatedResponse<StockMovement>> => {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    if (type && type !== "ALL") {
+        params.append('type', type);
+    }
+    const response = await axios.get<ApiResponse<PaginatedResponse<StockMovement>>>(`/stock-movements?${params.toString()}`);
+    return response.data.data as PaginatedResponse<StockMovement>;
 }
 
 export const getStockMovementsByWarehouse = async (warehouseUuid: string, limit?: number): Promise<StockMovement[]> => {
@@ -35,6 +58,15 @@ export const getStockMovementsByType = async (type: StockMovementType, limit?: n
     const params = limit ? `&limit=${limit}` : '';
     const response = await axios.get<ApiResponse<StockMovement[]>>(`/stock-movements/type?type=${type}${params}`);
     return response.data.data;
+}
+
+export const getStockMovementsByTypePaginated = async (type: StockMovementType, page: number = 1, limit: number = 10): Promise<PaginatedResponse<StockMovement>> => {
+    const params = new URLSearchParams();
+    params.append('type', type);
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    const response = await axios.get<ApiResponse<PaginatedResponse<StockMovement>>>(`/stock-movements/type?${params.toString()}`);
+    return response.data.data as PaginatedResponse<StockMovement>;
 }
 
 // Stock IN

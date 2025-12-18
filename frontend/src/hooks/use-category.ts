@@ -1,4 +1,4 @@
-import { createCategory, getCategories, updateCategory, deleteCategory } from "@/api/category";
+import { createCategory, getCategories, getCategoriesPaginated, updateCategory, deleteCategory } from "@/api/category";
 import type Category from "@/types/category";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -41,6 +41,15 @@ export const useGetCategories = () => {
         queryKey: ['categories'],
         queryFn: async () => {
             return await getCategories();
+        },
+    })
+}
+
+export const useGetCategoriesPaginated = (page: number = 1, limit: number = 10) => {
+    return useQuery({
+        queryKey: ['categories', 'paginated', page, limit],
+        queryFn: async () => {
+            return await getCategoriesPaginated(page, limit);
         },
     })
 }

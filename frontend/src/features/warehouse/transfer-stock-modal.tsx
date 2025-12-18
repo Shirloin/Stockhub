@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { useTransferStock } from "@/hooks/use-warehouse";
+import { useState, useMemo } from "react";
+import { useTransferStock, useGetWarehouseStock } from "@/hooks/use-warehouse";
 import { useGetWarehouses } from "@/hooks/use-warehouse";
 import { Button } from "@/components/ui/button";
+import WarehouseInfoCard from "@/components/warehouse/warehouse-info-card";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,69 @@ export default function TransferStockModal({
     notes: "",
   });
 
+  // Fetch destination warehouse stock when destination is selected
+  const { data: destinationStock } = useGetWarehouseStock(
+    formData.toWarehouseUuid
+  );
+
+  // Get destination warehouse details
+  const destinationWarehouse = useMemo(() => {
+    if (!formData.toWarehouseUuid || !warehouses) return null;
+    return warehouses.find((w) => w.uuid === formData.toWarehouseUuid);
+  }, [formData.toWarehouseUuid, warehouses]);
+
+  // Find current stock for the product in destination warehouse
+  const destinationProductStock = useMemo(() => {
+    if (
+      !formData.toWarehouseUuid ||
+      !destinationStock ||
+      !warehouseStock.productUuid
+    ) {
+      return null;
+    }
+    const stock = destinationStock.find(
+      (s) => s.productUuid === warehouseStock.productUuid
+    );
+    return stock?.quantity ?? 0;
+  }, [formData.toWarehouseUuid, destinationStock, warehouseStock.productUuid]);
+
+  // Calculate total stock in destination warehouse
+  const destinationTotalStock = useMemo(() => {
+    if (!destinationStock) return 0;
+    return destinationStock.reduce(
+      (sum, stock) => sum + (stock.quantity || 0),
+      0
+    );
+  }, [destinationStock]);
+
+  // Calculate capacity after transfer
+  const capacityAfterTransfer = useMemo(() => {
+    if (
+      !destinationWarehouse ||
+      !destinationWarehouse.capacity ||
+      destinationWarehouse.capacity === 0
+    ) {
+      return null;
+    }
+    const transferQty = parseInt(formData.quantity) || 0;
+    return destinationTotalStock + transferQty;
+  }, [destinationWarehouse, destinationTotalStock, formData.quantity]);
+
+  // Check if transfer would exceed capacity
+  const wouldExceedCapacity = useMemo(() => {
+    if (
+      !destinationWarehouse ||
+      !destinationWarehouse.capacity ||
+      destinationWarehouse.capacity === 0
+    ) {
+      return false;
+    }
+    return (
+      capacityAfterTransfer !== null &&
+      capacityAfterTransfer > destinationWarehouse.capacity
+    );
+  }, [destinationWarehouse, capacityAfterTransfer]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.toWarehouseUuid || !formData.quantity) return;
@@ -68,7 +132,7 @@ export default function TransferStockModal({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Transfer Stock</DialogTitle>
           <DialogDescription>
@@ -76,8 +140,8 @@ export default function TransferStockModal({
             {fromWarehouse.name}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="space-y-4 py-4 overflow-y-auto thin-scrollbar flex-1">
             <div className="space-y-2">
               <Label>Available Quantity</Label>
               <div className="text-2xl font-bold">{maxQuantity} units</div>
@@ -109,6 +173,21 @@ export default function TransferStockModal({
                 </SelectContent>
               </Select>
             </div>
+
+            {formData.toWarehouseUuid && destinationWarehouse && (
+              <WarehouseInfoCard
+                warehouse={destinationWarehouse}
+                productStock={destinationProductStock}
+                totalStock={destinationTotalStock}
+                title="Destination Warehouse Info"
+                showAfterOperation={
+                  !!(formData.quantity && parseInt(formData.quantity) > 0)
+                }
+                afterOperationCapacity={capacityAfterTransfer}
+                wouldExceedCapacity={wouldExceedCapacity}
+                afterOperationLabel="After Transfer"
+              />
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="transfer-quantity">Quantity *</Label>
@@ -154,7 +233,9 @@ export default function TransferStockModal({
                 transferStock.isPending ||
                 !formData.toWarehouseUuid ||
                 !formData.quantity ||
-                parseInt(formData.quantity) > maxQuantity
+                parseInt(formData.quantity) > maxQuantity ||
+                parseInt(formData.quantity) <= 0 ||
+                wouldExceedCapacity
               }
             >
               {transferStock.isPending ? "Transferring..." : "Transfer Stock"}

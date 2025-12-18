@@ -43,6 +43,36 @@ func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProductHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+	// Check for pagination parameters
+	pageStr := r.URL.Query().Get("page")
+	limitStr := r.URL.Query().Get("limit")
+
+	page := 1
+	limit := 10 // Default limit
+
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+			limit = l
+		}
+	}
+
+	// If pagination is requested
+	if pageStr != "" || (limitStr != "" && limit != 10) {
+		products, total, err := h.productUsecase.GetAllPaginated(r.Context(), page, limit)
+		if err != nil {
+			response.Error(w, http.StatusInternalServerError, "Failed to get products: "+err.Error())
+			return
+		}
+		response.PaginatedSuccess(w, http.StatusOK, "Products fetched successfully", page, limit, total, products)
+		return
+	}
+
+	// Fallback to non-paginated response
 	products, err := h.productUsecase.GetAll(r.Context())
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, "Failed to get products")

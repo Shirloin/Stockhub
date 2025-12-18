@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCreateStockOut } from "@/hooks/use-stock-movement";
 import { useGetProducts } from "@/hooks/use-product";
-import { useGetWarehouses } from "@/hooks/use-warehouse";
+import { useGetWarehouses, useGetWarehouseStock } from "@/hooks/use-warehouse";
 import { Button } from "@/components/ui/button";
+import WarehouseInfoCard from "@/components/warehouse/warehouse-info-card";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,55 @@ export default function CreateStockOutModal() {
     shippedBy: "",
     notes: "",
   });
+
+  // Fetch warehouse stock when warehouse is selected
+  const { data: warehouseStock } = useGetWarehouseStock(formData.warehouseUuid);
+
+  // Get selected warehouse details
+  const selectedWarehouse = useMemo(() => {
+    if (!formData.warehouseUuid || !warehouses) return null;
+    return warehouses.find((w) => w.uuid === formData.warehouseUuid);
+  }, [formData.warehouseUuid, warehouses]);
+
+  // Find current stock for selected product and warehouse
+  const currentStock = useMemo(() => {
+    if (!formData.productUuid || !formData.warehouseUuid || !warehouseStock) {
+      return null;
+    }
+    const stock = warehouseStock.find(
+      (s) => s.productUuid === formData.productUuid
+    );
+    return stock?.quantity ?? 0;
+  }, [formData.productUuid, formData.warehouseUuid, warehouseStock]);
+
+  // Calculate total stock in warehouse
+  const totalStock = useMemo(() => {
+    if (!warehouseStock) return 0;
+    return warehouseStock.reduce(
+      (sum, stock) => sum + (stock.quantity || 0),
+      0
+    );
+  }, [warehouseStock]);
+
+  // Calculate capacity after shipping stock
+  const capacityAfterShip = useMemo(() => {
+    if (
+      !selectedWarehouse ||
+      !selectedWarehouse.capacity ||
+      selectedWarehouse.capacity === 0
+    ) {
+      return null;
+    }
+    const shipQty = parseInt(formData.quantity) || 0;
+    return totalStock - shipQty;
+  }, [selectedWarehouse, totalStock, formData.quantity]);
+
+  // Calculate product stock after shipping
+  const stockAfterShip = useMemo(() => {
+    if (currentStock === null) return null;
+    const shipQty = parseInt(formData.quantity) || 0;
+    return Math.max(0, currentStock - shipQty);
+  }, [currentStock, formData.quantity]);
 
   const resetForm = () => {
     setFormData({
@@ -95,15 +145,15 @@ export default function CreateStockOutModal() {
       <DialogTrigger asChild>
         <Button variant="outline">Ship Stock</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Ship Stock (Stock OUT)</DialogTitle>
           <DialogDescription>
             Record outgoing inventory from a warehouse
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="space-y-4 py-4 overflow-y-auto thin-scrollbar flex-1">
             <div className="space-y-2">
               <Label htmlFor="stockout-product">Product *</Label>
               <Select
@@ -163,6 +213,22 @@ export default function CreateStockOutModal() {
               </Select>
             </div>
 
+            {formData.productUuid &&
+              formData.warehouseUuid &&
+              selectedWarehouse && (
+                <WarehouseInfoCard
+                  warehouse={selectedWarehouse}
+                  productStock={currentStock}
+                  totalStock={totalStock}
+                  showAfterOperation={
+                    formData.quantity && parseInt(formData.quantity) > 0
+                  }
+                  afterOperationStock={stockAfterShip}
+                  afterOperationCapacity={capacityAfterShip}
+                  afterOperationLabel="After Shipping"
+                />
+              )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="stockout-quantity">Quantity *</Label>
@@ -170,6 +236,7 @@ export default function CreateStockOutModal() {
                   id="stockout-quantity"
                   type="number"
                   min="1"
+                  max={currentStock !== null ? currentStock : undefined}
                   value={formData.quantity}
                   onChange={(e) =>
                     setFormData({ ...formData, quantity: e.target.value })

@@ -1,4 +1,5 @@
-import { useGetCategories } from "@/hooks/use-category";
+import { useState } from "react";
+import { useGetCategoriesPaginated } from "@/hooks/use-category";
 import type Category from "@/types/category";
 import CreateCategoryModal from "./create-category-modal";
 import UpdateCategoryModal from "./update-category-modal";
@@ -13,10 +14,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useCategoryStore } from "@/stores/category-store";
+import { PaginationControls } from "@/components/pagination-controls";
 
 export default function CategoryList() {
-  const { data: categories, isLoading, error } = useGetCategories();
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const { data: paginatedData, isLoading, error } = useGetCategoriesPaginated(page, limit);
   const { setSelectedCategory } = useCategoryStore();
+
+  const categories = paginatedData?.items || (Array.isArray(paginatedData) ? paginatedData : []);
+  const totalPages = paginatedData?.totalPages || 1;
+  const total = paginatedData?.total || (Array.isArray(paginatedData) ? paginatedData.length : 0);
 
   if (isLoading) {
     return (
@@ -51,45 +59,60 @@ export default function CategoryList() {
       </div>
 
       {categories && categories.length > 0 ? (
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {categories.map((category: Category) => (
-                <TableRow key={category.uuid}>
-                  <TableCell className="font-medium">{category.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {category.description || "-"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedCategory(category, "update")}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedCategory(category, "delete")}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </TableCell>
+        <>
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {categories.map((category: Category) => (
+                  <TableRow key={category.uuid}>
+                    <TableCell className="font-medium">{category.name}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {category.description || "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedCategory(category, "update")}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedCategory(category, "delete")}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <PaginationControls
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            limit={limit}
+            onPageChange={setPage}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+            itemName="categories"
+          />
+        </>
       ) : (
         <div className="text-center py-12 text-muted-foreground border rounded-lg">
           <p className="text-lg">No categories found.</p>

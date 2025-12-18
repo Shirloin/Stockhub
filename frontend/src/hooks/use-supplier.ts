@@ -1,4 +1,4 @@
-import { createSupplier, getSuppliers, updateSupplier, deleteSupplier } from "@/api/supplier";
+import { createSupplier, getSuppliers, getSuppliersPaginated, updateSupplier, deleteSupplier } from "@/api/supplier";
 import type Supplier from "@/types/supplier";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -41,6 +41,15 @@ export const useGetSuppliers = () => {
         queryKey: ['suppliers'],
         queryFn: async () => {
             return await getSuppliers();
+        },
+    })
+}
+
+export const useGetSuppliersPaginated = (page: number = 1, limit: number = 10) => {
+    return useQuery({
+        queryKey: ['suppliers', 'paginated', page, limit],
+        queryFn: async () => {
+            return await getSuppliersPaginated(page, limit);
         },
     })
 }

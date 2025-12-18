@@ -21,15 +21,71 @@ func NewStockMovementHandler(stockMovementUseCase *usecase.StockMovementUseCase)
 }
 
 func (h *StockMovementHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+	// Check for filter type parameter
+	typeStr := r.URL.Query().Get("type")
+	movementType := domain.StockMovementType(typeStr)
+
+	// Check for pagination parameters
+	pageStr := r.URL.Query().Get("page")
 	limitStr := r.URL.Query().Get("limit")
-	limit := 0 // 0 means no limit
+
+	page := 1
+	limit := 10 // Default limit
+
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
 	if limitStr != "" {
 		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
 			limit = l
 		}
 	}
 
-	movements, err := h.stockMovementUseCase.GetAll(r.Context(), limit)
+	// If pagination is requested
+	if pageStr != "" || (limitStr != "" && limit != 10) {
+		// If type filter is provided, use filtered pagination
+		if typeStr != "" && typeStr != "ALL" && movementType != "" {
+			movements, total, err := h.stockMovementUseCase.GetByTypePaginated(r.Context(), movementType, page, limit)
+			if err != nil {
+				response.Error(w, http.StatusInternalServerError, "Failed to get movements: "+err.Error())
+				return
+			}
+			response.PaginatedSuccess(w, http.StatusOK, "Movements fetched successfully", page, limit, total, movements)
+			return
+		}
+		// Otherwise get all movements with pagination
+		movements, total, err := h.stockMovementUseCase.GetAllPaginated(r.Context(), page, limit)
+		if err != nil {
+			response.Error(w, http.StatusInternalServerError, "Failed to get movements: "+err.Error())
+			return
+		}
+		response.PaginatedSuccess(w, http.StatusOK, "Movements fetched successfully", page, limit, total, movements)
+		return
+	}
+
+	// Fallback to non-paginated response
+	oldLimitStr := r.URL.Query().Get("limit")
+	oldLimit := 0 // 0 means no limit
+	if oldLimitStr != "" {
+		if l, err := strconv.Atoi(oldLimitStr); err == nil && l > 0 {
+			oldLimit = l
+		}
+	}
+
+	// If type filter is provided, use filtered response
+	if typeStr != "" && typeStr != "ALL" && movementType != "" {
+		movements, err := h.stockMovementUseCase.GetByType(r.Context(), movementType, oldLimit)
+		if err != nil {
+			response.Error(w, http.StatusInternalServerError, "Failed to get movements: "+err.Error())
+			return
+		}
+		response.Success(w, http.StatusOK, "Movements fetched successfully", movements)
+		return
+	}
+
+	movements, err := h.stockMovementUseCase.GetAll(r.Context(), oldLimit)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, "Failed to get movements: "+err.Error())
 		return
@@ -99,15 +155,46 @@ func (h *StockMovementHandler) GetByDateRange(w http.ResponseWriter, r *http.Req
 
 func (h *StockMovementHandler) GetByType(w http.ResponseWriter, r *http.Request) {
 	movementType := domain.StockMovementType(r.URL.Query().Get("type"))
+
+	// Check for pagination parameters
+	pageStr := r.URL.Query().Get("page")
 	limitStr := r.URL.Query().Get("limit")
-	limit := 100
+
+	page := 1
+	limit := 10 // Default limit
+
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
 	if limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
 			limit = l
 		}
 	}
 
-	movements, err := h.stockMovementUseCase.GetByType(r.Context(), movementType, limit)
+	// If pagination is requested
+	if pageStr != "" || (limitStr != "" && limit != 10) {
+		movements, total, err := h.stockMovementUseCase.GetByTypePaginated(r.Context(), movementType, page, limit)
+		if err != nil {
+			response.Error(w, http.StatusInternalServerError, "Failed to get movements: "+err.Error())
+			return
+		}
+		response.PaginatedSuccess(w, http.StatusOK, "Movements fetched successfully", page, limit, total, movements)
+		return
+	}
+
+	// Fallback to non-paginated response
+	oldLimitStr := r.URL.Query().Get("limit")
+	oldLimit := 100
+	if oldLimitStr != "" {
+		if l, err := strconv.Atoi(oldLimitStr); err == nil {
+			oldLimit = l
+		}
+	}
+
+	movements, err := h.stockMovementUseCase.GetByType(r.Context(), movementType, oldLimit)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, "Failed to get movements: "+err.Error())
 		return

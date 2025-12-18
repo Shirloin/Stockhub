@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCreateStockAdjustment } from "@/hooks/use-stock-movement";
 import { useGetProducts } from "@/hooks/use-product";
-import { useGetWarehouses } from "@/hooks/use-warehouse";
+import { useGetWarehouses, useGetWarehouseStock } from "@/hooks/use-warehouse";
 import type { AdjustmentReason } from "@/types/stock-movement";
+import WarehouseInfoCard from "@/components/warehouse/warehouse-info-card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -46,6 +47,74 @@ export default function CreateStockAdjustmentModal() {
     adjustedBy: "",
     notes: "",
   });
+
+  // Fetch warehouse stock when warehouse is selected
+  const { data: warehouseStock } = useGetWarehouseStock(formData.warehouseUuid);
+
+  // Get selected warehouse details
+  const selectedWarehouse = useMemo(() => {
+    if (!formData.warehouseUuid || !warehouses) return null;
+    return warehouses.find((w) => w.uuid === formData.warehouseUuid);
+  }, [formData.warehouseUuid, warehouses]);
+
+  // Find current stock for the selected product and warehouse
+  const currentProductStock = useMemo(() => {
+    if (!formData.productUuid || !formData.warehouseUuid || !warehouseStock) {
+      return null;
+    }
+    const stock = warehouseStock.find(
+      (s) => s.productUuid === formData.productUuid
+    );
+    return stock?.quantity ?? 0;
+  }, [formData.productUuid, formData.warehouseUuid, warehouseStock]);
+
+  // Calculate total stock in warehouse
+  const totalStock = useMemo(() => {
+    if (!warehouseStock) return 0;
+    return warehouseStock.reduce(
+      (sum, stock) => sum + (stock.quantity || 0),
+      0
+    );
+  }, [warehouseStock]);
+
+  // Calculate capacity after adjustment
+  const capacityAfterAdjustment = useMemo(() => {
+    if (
+      !selectedWarehouse ||
+      !selectedWarehouse.capacity ||
+      selectedWarehouse.capacity === 0
+    ) {
+      return null;
+    }
+    const adjustmentQty = parseInt(formData.quantity) || 0;
+    return totalStock + adjustmentQty;
+  }, [selectedWarehouse, totalStock, formData.quantity]);
+
+  // Check if adjustment would exceed capacity (only for positive adjustments)
+  const wouldExceedCapacity = useMemo(() => {
+    if (
+      !selectedWarehouse ||
+      !selectedWarehouse.capacity ||
+      selectedWarehouse.capacity === 0
+    ) {
+      return false;
+    }
+    const adjustmentQty = parseInt(formData.quantity) || 0;
+    // Only check for positive adjustments (adding stock)
+    return (
+      adjustmentQty > 0 &&
+      capacityAfterAdjustment !== null &&
+      capacityAfterAdjustment > selectedWarehouse.capacity
+    );
+  }, [selectedWarehouse, capacityAfterAdjustment, formData.quantity]);
+
+  // Calculate stock after adjustment
+  const stockAfterAdjustment = useMemo(() => {
+    if (currentProductStock === null) return null;
+    const adjustmentQty = parseInt(formData.quantity) || 0;
+    const newStock = currentProductStock + adjustmentQty;
+    return Math.max(0, newStock); // Stock can't go below 0
+  }, [currentProductStock, formData.quantity]);
 
   const resetForm = () => {
     setFormData({
@@ -109,15 +178,15 @@ export default function CreateStockAdjustmentModal() {
       <DialogTrigger asChild>
         <Button variant="outline">Adjust Stock</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Stock Adjustment</DialogTitle>
           <DialogDescription>
             Record stock adjustments (damage, loss, corrections, etc.)
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="space-y-4 py-4 overflow-y-auto thin-scrollbar flex-1">
             <div className="space-y-2">
               <Label htmlFor="adjust-product">Product *</Label>
               <Select
@@ -176,6 +245,23 @@ export default function CreateStockAdjustmentModal() {
                 </SelectContent>
               </Select>
             </div>
+
+            {formData.productUuid &&
+              formData.warehouseUuid &&
+              selectedWarehouse && (
+                <WarehouseInfoCard
+                  warehouse={selectedWarehouse}
+                  productStock={currentProductStock}
+                  totalStock={totalStock}
+                  showAfterOperation={
+                    formData.quantity && parseInt(formData.quantity) !== 0
+                  }
+                  afterOperationStock={stockAfterAdjustment}
+                  afterOperationCapacity={capacityAfterAdjustment}
+                  wouldExceedCapacity={wouldExceedCapacity}
+                  afterOperationLabel="After Adjustment"
+                />
+              )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -255,7 +341,11 @@ export default function CreateStockAdjustmentModal() {
               type="submit"
               variant="default"
               className="bg-black text-white hover:bg-black/90"
-              disabled={isPending}
+              disabled={
+                isPending ||
+                wouldExceedCapacity ||
+                (stockAfterAdjustment !== null && stockAfterAdjustment < 0)
+              }
             >
               {isPending ? "Adjusting..." : "Record Adjustment"}
             </Button>

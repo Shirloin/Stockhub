@@ -84,15 +84,15 @@ export default function CreateWarehouseModal() {
           Create Warehouse
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Create New Warehouse</DialogTitle>
           <DialogDescription>
             Add a new warehouse location to manage inventory.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="space-y-4 py-4 overflow-y-auto thin-scrollbar flex-1">
             <div className="space-y-2">
               <Label htmlFor="create-name">Name *</Label>
               <Input

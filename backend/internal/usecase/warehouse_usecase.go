@@ -12,13 +12,15 @@ type WarehouseUseCase struct {
 	warehouseRepository      *repository.WarehouseRepository
 	warehouseStockRepository *repository.WarehouseStockRepository
 	productRepository        *repository.ProductRepository
+	stockMovementRepository  *repository.StockMovementRepository
 }
 
-func NewWarehouseUseCase(warehouseRepository *repository.WarehouseRepository, warehouseStockRepository *repository.WarehouseStockRepository, productRepository *repository.ProductRepository) *WarehouseUseCase {
+func NewWarehouseUseCase(warehouseRepository *repository.WarehouseRepository, warehouseStockRepository *repository.WarehouseStockRepository, productRepository *repository.ProductRepository, stockMovementRepository *repository.StockMovementRepository) *WarehouseUseCase {
 	return &WarehouseUseCase{
 		warehouseRepository:      warehouseRepository,
 		warehouseStockRepository: warehouseStockRepository,
 		productRepository:        productRepository,
+		stockMovementRepository:  stockMovementRepository,
 	}
 }
 
@@ -35,6 +37,22 @@ func (w *WarehouseUseCase) GetAll(ctx context.Context) ([]domain.Warehouse, erro
 
 func (w *WarehouseUseCase) GetAllWithMetrics(ctx context.Context, limit int) ([]domain.WarehouseWithMetrics, error) {
 	return w.warehouseRepository.GetAllWithMetrics(ctx, limit)
+}
+
+func (w *WarehouseUseCase) GetAllPaginated(ctx context.Context, page, limit int) ([]domain.Warehouse, int64, error) {
+	warehouses, err := w.warehouseRepository.GetAllPaginated(ctx, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	total, err := w.warehouseRepository.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return warehouses, total, nil
+}
+
+func (w *WarehouseUseCase) GetAllWithMetricsPaginated(ctx context.Context, page, limit int) ([]domain.WarehouseWithMetrics, int64, error) {
+	return w.warehouseRepository.GetAllWithMetricsPaginated(ctx, page, limit)
 }
 
 func (w *WarehouseUseCase) GetByID(ctx context.Context, uuid string) (*domain.Warehouse, error) {
@@ -64,9 +82,70 @@ func (w *WarehouseUseCase) TransferStock(ctx context.Context, transfer *domain.S
 		transfer.TransferDate = time.Now()
 	}
 
+	// Get current stock levels for movement records
+	fromStock, err := w.warehouseStockRepository.GetByProductAndWarehouse(ctx, transfer.ProductUUID, transfer.FromWarehouseUUID)
+	if err != nil {
+		return err
+	}
+	if fromStock == nil {
+		return domain.ErrInsufficientStock
+	}
+
+	toStock, err := w.warehouseStockRepository.GetByProductAndWarehouse(ctx, transfer.ProductUUID, transfer.ToWarehouseUUID)
+	if err != nil {
+		return err
+	}
+
+	fromPreviousQty := fromStock.Quantity
+	fromNewQty := fromPreviousQty - transfer.Quantity
+
+	var toPreviousQty int
+	var toNewQty int
+	if toStock != nil {
+		toPreviousQty = toStock.Quantity
+		toNewQty = toPreviousQty + transfer.Quantity
+	} else {
+		toPreviousQty = 0
+		toNewQty = transfer.Quantity
+	}
+
 	// Transfer is a transaction between warehouses - does not affect product catalog (master data)
 	// Product.Stock remains unchanged as it represents available stock in catalog
 	if err := w.warehouseStockRepository.Transfer(ctx, transfer); err != nil {
+		return err
+	}
+
+	// Create stock movement record for source warehouse (negative quantity)
+	fromMovement := &domain.StockMovement{
+		ProductUUID:     transfer.ProductUUID,
+		WarehouseUUID:   transfer.FromWarehouseUUID,
+		MovementType:    domain.MovementTypeTransfer,
+		Quantity:        -transfer.Quantity, // Negative for out
+		PreviousQty:     fromPreviousQty,
+		NewQty:          fromNewQty,
+		ToWarehouseUUID: transfer.ToWarehouseUUID,
+		ReferenceNumber: transfer.UUID,
+		Notes:           transfer.Notes,
+		MovementDate:    transfer.TransferDate,
+	}
+	if err := w.stockMovementRepository.Create(ctx, fromMovement); err != nil {
+		return err
+	}
+
+	// Create stock movement record for destination warehouse (positive quantity)
+	toMovement := &domain.StockMovement{
+		ProductUUID:     transfer.ProductUUID,
+		WarehouseUUID:   transfer.ToWarehouseUUID,
+		MovementType:    domain.MovementTypeTransfer,
+		Quantity:        transfer.Quantity, // Positive for in
+		PreviousQty:     toPreviousQty,
+		NewQty:          toNewQty,
+		ToWarehouseUUID: transfer.FromWarehouseUUID,
+		ReferenceNumber: transfer.UUID,
+		Notes:           transfer.Notes,
+		MovementDate:    transfer.TransferDate,
+	}
+	if err := w.stockMovementRepository.Create(ctx, toMovement); err != nil {
 		return err
 	}
 
@@ -132,12 +211,10 @@ func (w *WarehouseUseCase) AddStock(ctx context.Context, stock *domain.Warehouse
 
 	if existing != nil {
 		existing.Quantity += stock.Quantity
-		existing.AvailableQty = existing.Quantity - existing.ReservedQty
 		if err := w.warehouseStockRepository.CreateOrUpdate(ctx, existing); err != nil {
 			return err
 		}
 	} else {
-		stock.AvailableQty = stock.Quantity - stock.ReservedQty
 		if err := w.warehouseStockRepository.CreateOrUpdate(ctx, stock); err != nil {
 			return err
 		}

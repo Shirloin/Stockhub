@@ -91,15 +91,16 @@ export default function AddStockModal({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Add Stock to {warehouse.name}</DialogTitle>
           <DialogDescription>
-            Move inventory from product catalog to this warehouse. This will reduce the catalog stock (master data).
+            Move inventory from product catalog to this warehouse. This will
+            reduce the catalog stock (master data).
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="space-y-4 py-4 overflow-y-auto thin-scrollbar flex-1">
             <div className="space-y-2">
               <Label htmlFor="add-product">Product *</Label>
               <Select
@@ -115,7 +116,8 @@ export default function AddStockModal({
                   {products && products.length > 0 ? (
                     products.map((product) => (
                       <SelectItem key={product.uuid} value={product.uuid!}>
-                        {product.title} ({product.sku}) - Stock: {product.stock || 0}
+                        {product.title} ({product.sku}) - Stock:{" "}
+                        {product.stock || 0}
                       </SelectItem>
                     ))
                   ) : (
@@ -136,7 +138,8 @@ export default function AddStockModal({
                       Available Catalog Stock: {availableStock} units
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Adding stock to warehouse will reduce the catalog stock (master data).
+                      Adding stock to warehouse will reduce the catalog stock
+                      (master data).
                     </p>
                   </div>
                 </AlertDescription>
@@ -160,14 +163,18 @@ export default function AddStockModal({
               />
               {exceedsAvailable && (
                 <p className="text-xs text-red-500">
-                  Quantity exceeds available catalog stock ({availableStock} units)
+                  Quantity exceeds available catalog stock ({availableStock}{" "}
+                  units)
                 </p>
               )}
-              {selectedProduct && !exceedsAvailable && requestedQuantity > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  After adding: Catalog stock will be {availableStock - requestedQuantity} units
-                </p>
-              )}
+              {selectedProduct &&
+                !exceedsAvailable &&
+                requestedQuantity > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    After adding: Catalog stock will be{" "}
+                    {availableStock - requestedQuantity} units
+                  </p>
+                )}
             </div>
           </div>
           <DialogFooter>

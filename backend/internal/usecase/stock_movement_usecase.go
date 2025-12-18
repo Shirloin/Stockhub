@@ -87,12 +87,9 @@ func (s *StockMovementUseCase) CreateMovement(ctx context.Context, movement *dom
 			ProductUUID:   movement.ProductUUID,
 			WarehouseUUID: movement.WarehouseUUID,
 			Quantity:      newQty,
-			ReservedQty:   0,
-			AvailableQty:  newQty,
 		}
 	} else {
 		warehouseStock.Quantity = newQty
-		warehouseStock.AvailableQty = warehouseStock.Quantity - warehouseStock.ReservedQty
 	}
 
 	if err := s.warehouseStockRepository.CreateOrUpdate(ctx, warehouseStock); err != nil {
@@ -131,6 +128,30 @@ func (s *StockMovementUseCase) GetByDateRange(ctx context.Context, startDate, en
 
 func (s *StockMovementUseCase) GetByType(ctx context.Context, movementType domain.StockMovementType, limit int) ([]domain.StockMovement, error) {
 	return s.stockMovementRepository.GetByType(ctx, movementType, limit)
+}
+
+func (s *StockMovementUseCase) GetAllPaginated(ctx context.Context, page, limit int) ([]domain.StockMovement, int64, error) {
+	movements, err := s.stockMovementRepository.GetAllPaginated(ctx, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	total, err := s.stockMovementRepository.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return movements, total, nil
+}
+
+func (s *StockMovementUseCase) GetByTypePaginated(ctx context.Context, movementType domain.StockMovementType, page, limit int) ([]domain.StockMovement, int64, error) {
+	movements, err := s.stockMovementRepository.GetByTypePaginated(ctx, movementType, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	total, err := s.stockMovementRepository.CountByType(ctx, movementType)
+	if err != nil {
+		return nil, 0, err
+	}
+	return movements, total, nil
 }
 
 type StockInUseCase struct {
@@ -204,12 +225,9 @@ func (s *StockInUseCase) Create(ctx context.Context, stockIn *domain.StockIn) er
 			ProductUUID:   stockIn.ProductUUID,
 			WarehouseUUID: stockIn.WarehouseUUID,
 			Quantity:      newQty,
-			ReservedQty:   0,
-			AvailableQty:  newQty,
 		}
 	} else {
 		warehouseStock.Quantity = newQty
-		warehouseStock.AvailableQty = warehouseStock.Quantity - warehouseStock.ReservedQty
 	}
 
 	if err := s.warehouseStockRepository.CreateOrUpdate(ctx, warehouseStock); err != nil {
@@ -288,8 +306,7 @@ func (s *StockOutUseCase) Create(ctx context.Context, stockOut *domain.StockOut)
 		return domain.ErrInsufficientStock
 	}
 
-	availableQty := warehouseStock.Quantity - warehouseStock.ReservedQty
-	if availableQty < stockOut.Quantity {
+	if warehouseStock.Quantity < stockOut.Quantity {
 		return domain.ErrInsufficientStock
 	}
 
@@ -303,7 +320,6 @@ func (s *StockOutUseCase) Create(ctx context.Context, stockOut *domain.StockOut)
 
 	// Update warehouse stock
 	warehouseStock.Quantity = newQty
-	warehouseStock.AvailableQty = warehouseStock.Quantity - warehouseStock.ReservedQty
 	if err := s.warehouseStockRepository.CreateOrUpdate(ctx, warehouseStock); err != nil {
 		return err
 	}
@@ -430,12 +446,9 @@ func (s *StockAdjustmentUseCase) Create(ctx context.Context, adjustment *domain.
 			ProductUUID:   adjustment.ProductUUID,
 			WarehouseUUID: adjustment.WarehouseUUID,
 			Quantity:      newQty,
-			ReservedQty:   0,
-			AvailableQty:  newQty,
 		}
 	} else {
 		warehouseStock.Quantity = newQty
-		warehouseStock.AvailableQty = warehouseStock.Quantity - warehouseStock.ReservedQty
 	}
 
 	if err := s.warehouseStockRepository.CreateOrUpdate(ctx, warehouseStock); err != nil {

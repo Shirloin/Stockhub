@@ -1,4 +1,5 @@
-import { useGetSuppliers } from "@/hooks/use-supplier";
+import { useState } from "react";
+import { useGetSuppliersPaginated } from "@/hooks/use-supplier";
 import type Supplier from "@/types/supplier";
 import CreateSupplierModal from "./create-supplier-modal";
 import UpdateSupplierModal from "./update-supplier-modal";
@@ -6,10 +7,17 @@ import DeleteSupplierModal from "./delete-supplier-modal";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSupplierStore } from "@/stores/supplier-store";
+import { PaginationControls } from "@/components/pagination-controls";
 
 export default function SupplierList() {
-  const { data: suppliers, isLoading, error } = useGetSuppliers();
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const { data: paginatedData, isLoading, error } = useGetSuppliersPaginated(page, limit);
   const { setSelectedSupplier } = useSupplierStore();
+
+  const suppliers = paginatedData?.items || (Array.isArray(paginatedData) ? paginatedData : []);
+  const totalPages = paginatedData?.totalPages || 1;
+  const total = paginatedData?.total || (Array.isArray(paginatedData) ? paginatedData.length : 0);
 
   if (isLoading) {
     return (
@@ -40,47 +48,62 @@ export default function SupplierList() {
       </div>
 
       {suppliers && suppliers.length > 0 ? (
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {suppliers.map((supplier: Supplier) => (
-                <TableRow key={supplier.uuid}>
-                  <TableCell className="font-medium">{supplier.name}</TableCell>
-                  <TableCell>{supplier.contactName || "-"}</TableCell>
-                  <TableCell>{supplier.email || "-"}</TableCell>
-                  <TableCell>{supplier.phone || "-"}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedSupplier(supplier, "update")}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedSupplier(supplier, "delete")}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </TableCell>
+        <>
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {suppliers.map((supplier: Supplier) => (
+                  <TableRow key={supplier.uuid}>
+                    <TableCell className="font-medium">{supplier.name}</TableCell>
+                    <TableCell>{supplier.contactName || "-"}</TableCell>
+                    <TableCell>{supplier.email || "-"}</TableCell>
+                    <TableCell>{supplier.phone || "-"}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedSupplier(supplier, "update")}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedSupplier(supplier, "delete")}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <PaginationControls
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            limit={limit}
+            onPageChange={setPage}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+            itemName="suppliers"
+          />
+        </>
       ) : (
         <div className="text-center py-12 text-muted-foreground border rounded-lg">
           <p className="text-lg">No suppliers found.</p>

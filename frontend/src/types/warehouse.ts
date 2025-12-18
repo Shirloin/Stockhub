@@ -22,8 +22,6 @@ export interface WarehouseStock {
     productUuid?: string
     warehouseUuid?: string
     quantity?: number
-    reservedQty?: number
-    availableQty?: number
     aisle?: string
     rack?: string
     shelf?: string

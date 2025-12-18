@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGetProducts } from "@/hooks/use-product";
+import { useGetProductsPaginated } from "@/hooks/use-product";
 import type Product from "@/types/product";
 import CreateProductModal from "./create-product-modal";
 import DeleteProductModal from "./delete-product-modal";
@@ -10,13 +10,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { LayoutGrid, List } from "lucide-react";
 import { useProductStore } from "@/stores/product-store";
+import { PaginationControls } from "@/components/pagination-controls";
 
 type ViewMode = "grid" | "table";
 
 export default function ProductList() {
-  const { data: products, isLoading, error } = useGetProducts();
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const { data: paginatedData, isLoading, error } = useGetProductsPaginated(page, limit);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const { setSelectedProduct } = useProductStore();
+
+  const products = paginatedData?.items || (Array.isArray(paginatedData) ? paginatedData : []);
+  const totalPages = paginatedData?.totalPages || 1;
+  const total = paginatedData?.total || (Array.isArray(paginatedData) ? paginatedData.length : 0);
 
   if (isLoading) {
     return (
@@ -77,82 +84,97 @@ export default function ProductList() {
       </div>
 
       {products && products.length > 0 ? (
-        viewMode === "grid" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((product: Product) => (
-              <ProductCard key={product.uuid} product={product} />
-            ))}
-          </div>
-        ) : (
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Catalog Stock</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products.map((product: Product) => (
-                  <TableRow key={product.uuid}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{product.title}</div>
-                        {product.description && (
-                          <div className="text-sm text-muted-foreground line-clamp-1">
-                            {product.description}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-mono text-sm">{product.sku || "-"}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-semibold">
-                        ${product.price ? (product.price / 100).toFixed(2) : "0.00"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-medium">{product.stock || 0}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStockBadgeVariant(product.stock || 0)}>
-                        {product.stock === 0
-                          ? "Out of Stock"
-                          : product.stock! < 10
-                          ? "Low Stock"
-                          : "In Stock"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedProduct(product, "update")}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedProduct(product, "delete")}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </TableCell>
+        <>
+          {viewMode === "grid" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {products.map((product: Product) => (
+                <ProductCard key={product.uuid} product={product} />
+              ))}
+            </div>
+          ) : (
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>SKU</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Catalog Stock</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )
+                </TableHeader>
+                <TableBody>
+                  {products.map((product: Product) => (
+                    <TableRow key={product.uuid}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{product.title}</div>
+                          {product.description && (
+                            <div className="text-sm text-muted-foreground line-clamp-1">
+                              {product.description}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-mono text-sm">{product.sku || "-"}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-semibold">
+                          ${product.price ? (product.price / 100).toFixed(2) : "0.00"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium">{product.stock || 0}</span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStockBadgeVariant(product.stock || 0)}>
+                          {product.stock === 0
+                            ? "Out of Stock"
+                            : product.stock! < 10
+                            ? "Low Stock"
+                            : "In Stock"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedProduct(product, "update")}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedProduct(product, "delete")}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          <PaginationControls
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            limit={limit}
+            onPageChange={setPage}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+            itemName="products"
+          />
+        </>
       ) : (
         <div className="text-center py-12 text-muted-foreground border rounded-lg">
           <p className="text-lg">No products found.</p>

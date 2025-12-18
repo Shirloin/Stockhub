@@ -27,6 +27,29 @@ func (r *SupplierRepository) GetAll(ctx context.Context) ([]domain.Supplier, err
 	return suppliers, nil
 }
 
+func (r *SupplierRepository) GetAllPaginated(ctx context.Context, page, limit int) ([]domain.Supplier, error) {
+	var suppliers []domain.Supplier
+	offset := (page - 1) * limit
+	if err := r.db.WithContext(ctx).
+		Order("name ASC").
+		Offset(offset).
+		Limit(limit).
+		Find(&suppliers).Error; err != nil {
+		return nil, err
+	}
+	return suppliers, nil
+}
+
+func (r *SupplierRepository) Count(ctx context.Context) (int64, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).
+		Model(&domain.Supplier{}).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func (r *SupplierRepository) GetByID(ctx context.Context, uuid string) (*domain.Supplier, error) {
 	var supplier domain.Supplier
 	if err := r.db.WithContext(ctx).Where("uuid = ?", uuid).First(&supplier).Error; err != nil {

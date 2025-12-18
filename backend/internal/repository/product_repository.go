@@ -41,6 +41,20 @@ func (r *ProductRepository) GetAll(ctx context.Context) ([]domain.Product, error
 	return products, nil
 }
 
+func (r *ProductRepository) GetAllPaginated(ctx context.Context, page, limit int) ([]domain.Product, error) {
+	var products []domain.Product
+	offset := (page - 1) * limit
+	if err := r.db.WithContext(ctx).
+		Preload("Category").Preload("Supplier").
+		Order("created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
+}
+
 func (r *ProductRepository) GetById(ctx context.Context, uuid string) (*domain.Product, error) {
 	var product domain.Product
 	if err := r.db.WithContext(ctx).Preload("Category").Preload("Supplier").Where("uuid = ?", uuid).First(&product).Error; err != nil {

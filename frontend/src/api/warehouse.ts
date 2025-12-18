@@ -8,6 +8,14 @@ interface ApiResponse<T> {
     data: T;
 }
 
+export interface PaginatedResponse<T> {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    items: T[];
+}
+
 export const createWarehouse = async (warehouse: Omit<Warehouse, 'uuid' | 'createdAt' | 'updatedAt'>): Promise<Warehouse> => {
     const response = await axios.post<ApiResponse<Warehouse>>('/warehouses', warehouse);
     return response.data.data;
@@ -24,6 +32,19 @@ export const getWarehouses = async (includeMetrics: boolean = false, limit?: num
     const url = params.toString() ? `/warehouses?${params.toString()}` : '/warehouses';
     const response = await axios.get<ApiResponse<Warehouse[]>>(url);
     return response.data.data;
+}
+
+export const getWarehousesPaginated = async (page: number = 1, limit: number = 10, includeMetrics: boolean = false): Promise<PaginatedResponse<Warehouse>> => {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    if (includeMetrics) {
+        params.append('metrics', 'true');
+    }
+    const url = `/warehouses?${params.toString()}`;
+    const response = await axios.get<ApiResponse<PaginatedResponse<Warehouse>>>(url);
+    const result = response.data.data as PaginatedResponse<Warehouse>;
+    return result;
 }
 
 export const getWarehouseStock = async (warehouseUuid: string): Promise<WarehouseStock[]> => {

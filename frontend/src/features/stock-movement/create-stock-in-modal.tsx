@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCreateStockIn } from "@/hooks/use-stock-movement";
 import { useGetProducts } from "@/hooks/use-product";
-import { useGetWarehouses } from "@/hooks/use-warehouse";
+import { useGetWarehouses, useGetWarehouseStock } from "@/hooks/use-warehouse";
 import { useGetSuppliers } from "@/hooks/use-supplier";
 import { Button } from "@/components/ui/button";
+import WarehouseInfoCard from "@/components/warehouse/warehouse-info-card";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,70 @@ export default function CreateStockInModal() {
     receivedBy: "",
     notes: "",
   });
+
+  // Fetch warehouse stock when warehouse is selected
+  const { data: warehouseStock } = useGetWarehouseStock(formData.warehouseUuid);
+
+  // Get selected warehouse details
+  const selectedWarehouse = useMemo(() => {
+    if (!formData.warehouseUuid || !warehouses) return null;
+    return warehouses.find((w) => w.uuid === formData.warehouseUuid);
+  }, [formData.warehouseUuid, warehouses]);
+
+  // Find current stock for selected product and warehouse
+  const currentStock = useMemo(() => {
+    if (!formData.productUuid || !formData.warehouseUuid || !warehouseStock) {
+      return null;
+    }
+    const stock = warehouseStock.find(
+      (s) => s.productUuid === formData.productUuid
+    );
+    return stock?.quantity ?? 0;
+  }, [formData.productUuid, formData.warehouseUuid, warehouseStock]);
+
+  // Calculate total stock in warehouse
+  const totalStock = useMemo(() => {
+    if (!warehouseStock) return 0;
+    return warehouseStock.reduce(
+      (sum, stock) => sum + (stock.quantity || 0),
+      0
+    );
+  }, [warehouseStock]);
+
+  // Calculate capacity after receiving stock
+  const capacityAfterReceive = useMemo(() => {
+    if (
+      !selectedWarehouse ||
+      !selectedWarehouse.capacity ||
+      selectedWarehouse.capacity === 0
+    ) {
+      return null;
+    }
+    const receiveQty = parseInt(formData.quantity) || 0;
+    return totalStock + receiveQty;
+  }, [selectedWarehouse, totalStock, formData.quantity]);
+
+  // Check if receiving would exceed capacity
+  const wouldExceedCapacity = useMemo(() => {
+    if (
+      !selectedWarehouse ||
+      !selectedWarehouse.capacity ||
+      selectedWarehouse.capacity === 0
+    ) {
+      return false;
+    }
+    return (
+      capacityAfterReceive !== null &&
+      capacityAfterReceive > selectedWarehouse.capacity
+    );
+  }, [selectedWarehouse, capacityAfterReceive]);
+
+  // Calculate product stock after receiving
+  const stockAfterReceive = useMemo(() => {
+    if (currentStock === null) return null;
+    const receiveQty = parseInt(formData.quantity) || 0;
+    return currentStock + receiveQty;
+  }, [currentStock, formData.quantity]);
 
   const resetForm = () => {
     setFormData({
@@ -102,15 +167,15 @@ export default function CreateStockInModal() {
           Receive Stock
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Receive Stock (Stock IN)</DialogTitle>
           <DialogDescription>
             Record incoming inventory to a warehouse
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="space-y-4 py-4 overflow-y-auto thin-scrollbar flex-1">
             <div className="space-y-2">
               <Label htmlFor="stockin-product">Product *</Label>
               <Select
@@ -169,6 +234,23 @@ export default function CreateStockInModal() {
                 </SelectContent>
               </Select>
             </div>
+
+            {formData.productUuid &&
+              formData.warehouseUuid &&
+              selectedWarehouse && (
+                <WarehouseInfoCard
+                  warehouse={selectedWarehouse}
+                  productStock={currentStock}
+                  totalStock={totalStock}
+                  showAfterOperation={
+                    formData.quantity && parseInt(formData.quantity) > 0
+                  }
+                  afterOperationStock={stockAfterReceive}
+                  afterOperationCapacity={capacityAfterReceive}
+                  wouldExceedCapacity={wouldExceedCapacity}
+                  afterOperationLabel="After Receiving"
+                />
+              )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -264,7 +346,7 @@ export default function CreateStockInModal() {
               type="submit"
               variant="default"
               className="bg-black text-white hover:bg-black/90"
-              disabled={isPending}
+              disabled={isPending || wouldExceedCapacity}
             >
               {isPending ? "Receiving..." : "Receive Stock"}
             </Button>

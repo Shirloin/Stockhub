@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     getStockMovements,
+    getStockMovementsPaginated,
     getStockMovementsByWarehouse,
     getStockMovementsByProduct,
     getStockMovementsByDateRange,
     getStockMovementsByType,
+    getStockMovementsByTypePaginated,
     createStockIn,
     getStockIns,
     getStockInsByWarehouse,
@@ -53,6 +55,24 @@ export const useGetStockMovementsByType = (type: StockMovementType, limit?: numb
     return useQuery({
         queryKey: ['stockMovements', 'type', type, limit],
         queryFn: () => getStockMovementsByType(type, limit),
+    });
+}
+
+export const useGetStockMovementsPaginated = (
+    page: number = 1,
+    limit: number = 10,
+    type?: StockMovementType | "ALL"
+) => {
+    return useQuery({
+        queryKey: ['stockMovements', 'paginated', page, limit, type],
+        queryFn: () => getStockMovementsPaginated(page, limit, type),
+    });
+}
+
+export const useGetStockMovementsByTypePaginated = (type: StockMovementType, page: number = 1, limit: number = 10) => {
+    return useQuery({
+        queryKey: ['stockMovements', 'type', 'paginated', type, page, limit],
+        queryFn: () => getStockMovementsByTypePaginated(type, page, limit),
     });
 }
 

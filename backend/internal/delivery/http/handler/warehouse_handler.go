@@ -42,16 +42,56 @@ func (h *WarehouseHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *WarehouseHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	// Check if metrics are requested via query parameter
 	includeMetrics := r.URL.Query().Get("metrics") == "true"
+
+	// Check for pagination parameters
+	pageStr := r.URL.Query().Get("page")
 	limitStr := r.URL.Query().Get("limit")
-	limit := 0 // 0 means no limit
+
+	page := 1
+	limit := 10 // Default limit
+
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
 	if limitStr != "" {
 		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
 			limit = l
 		}
 	}
 
+	// If pagination is requested (page or limit provided)
+	if pageStr != "" || (limitStr != "" && limit != 10) {
+		if includeMetrics {
+			warehouses, total, err := h.warehouseUsecase.GetAllWithMetricsPaginated(r.Context(), page, limit)
+			if err != nil {
+				response.Error(w, http.StatusInternalServerError, "Failed to get warehouses: "+err.Error())
+				return
+			}
+			response.PaginatedSuccess(w, http.StatusOK, "Warehouses fetched successfully", page, limit, total, warehouses)
+		} else {
+			warehouses, total, err := h.warehouseUsecase.GetAllPaginated(r.Context(), page, limit)
+			if err != nil {
+				response.Error(w, http.StatusInternalServerError, "Failed to get warehouses: "+err.Error())
+				return
+			}
+			response.PaginatedSuccess(w, http.StatusOK, "Warehouses fetched successfully", page, limit, total, warehouses)
+		}
+		return
+	}
+
+	// Fallback to non-paginated responses for backward compatibility
+	oldLimitStr := r.URL.Query().Get("limit")
+	oldLimit := 0 // 0 means no limit
+	if oldLimitStr != "" {
+		if l, err := strconv.Atoi(oldLimitStr); err == nil && l > 0 {
+			oldLimit = l
+		}
+	}
+
 	if includeMetrics {
-		warehouses, err := h.warehouseUsecase.GetAllWithMetrics(r.Context(), limit)
+		warehouses, err := h.warehouseUsecase.GetAllWithMetrics(r.Context(), oldLimit)
 		if err != nil {
 			response.Error(w, http.StatusInternalServerError, "Failed to get warehouses: "+err.Error())
 			return

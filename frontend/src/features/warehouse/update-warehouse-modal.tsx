@@ -211,7 +211,7 @@ export default function UpdateWarehouseModal() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Update Warehouse</DialogTitle>
           <DialogDescription>
@@ -219,10 +219,12 @@ export default function UpdateWarehouseModal() {
           </DialogDescription>
         </DialogHeader>
         {warehouseToUpdate && (
-          <UpdateWarehouseForm
-            key={warehouseToUpdate.uuid}
-            warehouseToUpdate={warehouseToUpdate}
-          />
+          <div className="overflow-y-auto thin-scrollbar flex-1 min-h-0">
+            <UpdateWarehouseForm
+              key={warehouseToUpdate.uuid}
+              warehouseToUpdate={warehouseToUpdate}
+            />
+          </div>
         )}
       </DialogContent>
     </Dialog>

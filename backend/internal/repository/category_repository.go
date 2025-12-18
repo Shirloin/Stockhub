@@ -27,6 +27,29 @@ func (r *CategoryRepository) GetAll(ctx context.Context) ([]domain.Category, err
 	return categories, nil
 }
 
+func (r *CategoryRepository) GetAllPaginated(ctx context.Context, page, limit int) ([]domain.Category, error) {
+	var categories []domain.Category
+	offset := (page - 1) * limit
+	if err := r.db.WithContext(ctx).
+		Order("name ASC").
+		Offset(offset).
+		Limit(limit).
+		Find(&categories).Error; err != nil {
+		return nil, err
+	}
+	return categories, nil
+}
+
+func (r *CategoryRepository) Count(ctx context.Context) (int64, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).
+		Model(&domain.Category{}).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func (r *CategoryRepository) GetByID(ctx context.Context, uuid string) (*domain.Category, error) {
 	var category domain.Category
 	if err := r.db.WithContext(ctx).Where("uuid = ?", uuid).First(&category).Error; err != nil {

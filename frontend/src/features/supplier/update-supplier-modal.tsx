@@ -15,7 +15,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-function UpdateSupplierForm({ supplierToUpdate }: { supplierToUpdate: Supplier }) {
+function UpdateSupplierForm({
+  supplierToUpdate,
+}: {
+  supplierToUpdate: Supplier;
+}) {
   const updateSupplier = useUpdateSupplier();
   const { clearSelectedSupplier } = useSupplierStore();
 
@@ -54,9 +58,7 @@ function UpdateSupplierForm({ supplierToUpdate }: { supplierToUpdate: Supplier }
           <Input
             id="update-name"
             value={formData.name}
-            onChange={(e) =>
-              setFormData({ ...formData, name: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             placeholder="Enter supplier name"
             required
           />
@@ -145,7 +147,7 @@ export default function UpdateSupplierModal() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Update Supplier</DialogTitle>
           <DialogDescription>
@@ -153,13 +155,14 @@ export default function UpdateSupplierModal() {
           </DialogDescription>
         </DialogHeader>
         {supplierToUpdate && (
-          <UpdateSupplierForm
-            key={supplierToUpdate.uuid}
-            supplierToUpdate={supplierToUpdate}
-          />
+          <div className="overflow-y-auto thin-scrollbar flex-1 min-h-0">
+            <UpdateSupplierForm
+              key={supplierToUpdate.uuid}
+              supplierToUpdate={supplierToUpdate}
+            />
+          </div>
         )}
       </DialogContent>
     </Dialog>
   );
 }
-

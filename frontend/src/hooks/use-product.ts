@@ -1,4 +1,4 @@
-import { createProduct, getProducts, updateProduct, deleteProduct, getTopProductsByStock } from "@/api/product";
+import { createProduct, getProducts, getProductsPaginated, updateProduct, deleteProduct, getTopProductsByStock } from "@/api/product";
 import type Product from "@/types/product";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -41,6 +41,15 @@ export const useGetProducts = () => {
         queryKey: ['products'],
         queryFn: async () => {
             return await getProducts();
+        },
+    })
+}
+
+export const useGetProductsPaginated = (page: number = 1, limit: number = 10) => {
+    return useQuery({
+        queryKey: ['products', 'paginated', page, limit],
+        queryFn: async () => {
+            return await getProductsPaginated(page, limit);
         },
     })
 }

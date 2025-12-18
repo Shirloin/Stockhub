@@ -128,7 +128,8 @@ function UpdateProductForm({ productToUpdate }: { productToUpdate: Product }) {
               required
             />
             <p className="text-xs text-muted-foreground">
-              Total available stock in catalog. Adding stock to warehouses will reduce this value.
+              Total available stock in catalog. Adding stock to warehouses will
+              reduce this value.
             </p>
           </div>
           <div className="space-y-2">
@@ -277,7 +278,7 @@ export default function UpdateProductModal() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Update Product</DialogTitle>
           <DialogDescription>
@@ -285,10 +286,12 @@ export default function UpdateProductModal() {
           </DialogDescription>
         </DialogHeader>
         {productToUpdate && (
-          <UpdateProductForm
-            key={productToUpdate.uuid}
-            productToUpdate={productToUpdate}
-          />
+          <div className="overflow-y-auto thin-scrollbar flex-1 min-h-0">
+            <UpdateProductForm
+              key={productToUpdate.uuid}
+              productToUpdate={productToUpdate}
+            />
+          </div>
         )}
       </DialogContent>
     </Dialog>

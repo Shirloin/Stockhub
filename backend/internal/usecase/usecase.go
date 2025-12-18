@@ -17,7 +17,7 @@ func InitUsecases(repositories *repository.Repositories) *Usecases {
 	productUsecase := NewProductUseCase(repositories.ProductRepository, repositories.WarehouseStockRepository, repositories.WarehouseRepository)
 	categoryUsecase := NewCategoryUseCase(repositories.CategoryRepository)
 	supplierUsecase := NewSupplierUseCase(repositories.SupplierRepository)
-	warehouseUsecase := NewWarehouseUseCase(repositories.WarehouseRepository, repositories.WarehouseStockRepository, repositories.ProductRepository)
+	warehouseUsecase := NewWarehouseUseCase(repositories.WarehouseRepository, repositories.WarehouseStockRepository, repositories.ProductRepository, repositories.StockMovementRepository)
 	stockMovementUseCase := NewStockMovementUseCase(repositories.StockMovementRepository, repositories.WarehouseStockRepository, repositories.WarehouseRepository, repositories.ProductRepository)
 	stockInUseCase := NewStockInUseCase(repositories.StockInRepository, repositories.StockMovementRepository, repositories.WarehouseStockRepository, repositories.WarehouseRepository, repositories.ProductRepository)
 	stockOutUseCase := NewStockOutUseCase(repositories.StockOutRepository, repositories.StockMovementRepository, repositories.WarehouseStockRepository, repositories.WarehouseRepository, repositories.ProductRepository)

@@ -34,6 +34,21 @@ func (c *CategoryUseCase) GetAll(ctx context.Context) ([]domain.Category, error)
 	return c.categoryRepository.GetAll(ctx)
 }
 
+func (c *CategoryUseCase) GetAllPaginated(ctx context.Context, page, limit int) ([]domain.Category, int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	categories, err := c.categoryRepository.GetAllPaginated(ctx, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	total, err := c.categoryRepository.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return categories, total, nil
+}
+
 func (c *CategoryUseCase) GetByID(ctx context.Context, uuid string) (*domain.Category, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

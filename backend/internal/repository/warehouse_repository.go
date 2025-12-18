@@ -41,6 +41,21 @@ func (r *WarehouseRepository) GetAll(ctx context.Context) ([]domain.Warehouse, e
 	return warehouses, nil
 }
 
+// GetAllPaginated returns paginated warehouses
+func (r *WarehouseRepository) GetAllPaginated(ctx context.Context, page, limit int) ([]domain.Warehouse, error) {
+	var warehouses []domain.Warehouse
+	offset := (page - 1) * limit
+	if err := r.db.WithContext(ctx).
+		Where("is_active = ?", true).
+		Order("name ASC").
+		Offset(offset).
+		Limit(limit).
+		Find(&warehouses).Error; err != nil {
+		return nil, err
+	}
+	return warehouses, nil
+}
+
 // GetAllWithMetrics returns warehouses with utilization metrics, sorted by utilization descending
 func (r *WarehouseRepository) GetAllWithMetrics(ctx context.Context, limit int) ([]domain.WarehouseWithMetrics, error) {
 	type Result struct {
@@ -88,6 +103,63 @@ func (r *WarehouseRepository) GetAllWithMetrics(ctx context.Context, limit int) 
 	}
 
 	return warehousesWithMetrics, nil
+}
+
+// GetAllWithMetricsPaginated returns paginated warehouses with utilization metrics
+func (r *WarehouseRepository) GetAllWithMetricsPaginated(ctx context.Context, page, limit int) ([]domain.WarehouseWithMetrics, int64, error) {
+	type Result struct {
+		domain.Warehouse
+		TotalStock  int     `gorm:"column:total_stock"`
+		Utilization float64 `gorm:"column:utilization"`
+	}
+
+	var results []Result
+	var total int64
+
+	// Count total warehouses
+	countQuery := `
+		SELECT COUNT(DISTINCT w.uuid)
+		FROM warehouses w
+		WHERE w.is_active = ?
+	`
+	if err := r.db.WithContext(ctx).Raw(countQuery, true).Scan(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Build SQL query with utilization calculation and sorting in database
+	offset := (page - 1) * limit
+	query := `
+		SELECT
+			w.*,
+			COALESCE(SUM(ws.quantity), 0) as total_stock,
+			CASE
+				WHEN w.capacity > 0 THEN
+					LEAST((COALESCE(SUM(ws.quantity), 0)::float / w.capacity::float) * 100, 100)
+				ELSE 0
+			END as utilization
+		FROM warehouses w
+		LEFT JOIN warehouse_stocks ws ON w.uuid = ws.warehouse_uuid
+		WHERE w.is_active = ?
+		GROUP BY w.uuid
+		ORDER BY utilization DESC
+		LIMIT ? OFFSET ?
+	`
+
+	args := []interface{}{true, limit, offset}
+	if err := r.db.WithContext(ctx).Raw(query, args...).Scan(&results).Error; err != nil {
+		return nil, 0, err
+	}
+
+	warehousesWithMetrics := make([]domain.WarehouseWithMetrics, 0, len(results))
+	for _, result := range results {
+		warehousesWithMetrics = append(warehousesWithMetrics, domain.WarehouseWithMetrics{
+			Warehouse:   result.Warehouse,
+			TotalStock:  result.TotalStock,
+			Utilization: result.Utilization,
+		})
+	}
+
+	return warehousesWithMetrics, total, nil
 }
 
 func (r *WarehouseRepository) GetByID(ctx context.Context, uuid string) (*domain.Warehouse, error) {
@@ -185,16 +257,12 @@ func (r *WarehouseStockRepository) CreateOrUpdate(ctx context.Context, stock *do
 		First(&existing).Error
 
 	if err == gorm.ErrRecordNotFound {
-		// Calculate available quantity
-		stock.AvailableQty = stock.Quantity - stock.ReservedQty
 		return r.db.WithContext(ctx).Create(stock).Error
 	} else if err != nil {
 		return err
 	}
 
 	existing.Quantity = stock.Quantity
-	existing.ReservedQty = stock.ReservedQty
-	existing.AvailableQty = stock.Quantity - stock.ReservedQty
 	return r.db.WithContext(ctx).Save(&existing).Error
 }
 

@@ -34,6 +34,21 @@ func (s *SupplierUseCase) GetAll(ctx context.Context) ([]domain.Supplier, error)
 	return s.supplierRepository.GetAll(ctx)
 }
 
+func (s *SupplierUseCase) GetAllPaginated(ctx context.Context, page, limit int) ([]domain.Supplier, int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	suppliers, err := s.supplierRepository.GetAllPaginated(ctx, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	total, err := s.supplierRepository.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return suppliers, total, nil
+}
+
 func (s *SupplierUseCase) GetByID(ctx context.Context, uuid string) (*domain.Supplier, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

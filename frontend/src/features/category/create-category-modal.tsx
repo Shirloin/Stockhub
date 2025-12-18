@@ -52,19 +52,22 @@ export default function CreateCategoryModal() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="default" className="bg-black text-white hover:bg-black/90">
+        <Button
+          variant="default"
+          className="bg-black text-white hover:bg-black/90"
+        >
           Create Category
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Create New Category</DialogTitle>
           <DialogDescription>
             Add a new product category to organize your inventory.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="space-y-4 py-4 overflow-y-auto thin-scrollbar flex-1">
             <div className="space-y-2">
               <Label htmlFor="create-name">Name *</Label>
               <Input
@@ -105,4 +108,3 @@ export default function CreateCategoryModal() {
     </Dialog>
   );
 }
-

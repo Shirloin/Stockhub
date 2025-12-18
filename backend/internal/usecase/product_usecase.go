@@ -46,6 +46,21 @@ func (p *ProductUseCase) GetAll(ctx context.Context) ([]domain.Product, error) {
 	return p.productRepository.GetAll(ctx)
 }
 
+func (p *ProductUseCase) GetAllPaginated(ctx context.Context, page, limit int) ([]domain.Product, int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	products, err := p.productRepository.GetAllPaginated(ctx, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	total, err := p.productRepository.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
+}
+
 func (p *ProductUseCase) GetById(ctx context.Context, uuid string) (*domain.Product, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

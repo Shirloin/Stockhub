@@ -37,8 +37,6 @@ type WarehouseStock struct {
 	Product       Product   `gorm:"foreignKey:ProductUUID;references:UUID" json:"product,omitempty"`
 	Warehouse     Warehouse `gorm:"foreignKey:WarehouseUUID;references:UUID" json:"warehouse,omitempty"`
 	Quantity      int       `gorm:"not null;default:0" json:"quantity"`
-	ReservedQty   int       `gorm:"not null;default:0" json:"reservedQty"`  // Reserved for orders
-	AvailableQty  int       `gorm:"not null;default:0" json:"availableQty"` // Available = Quantity - ReservedQty
 	CreatedAt     time.Time `gorm:"column:created_at;autoCreateTime" json:"createdAt"`
 	UpdatedAt     time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updatedAt"`
 }

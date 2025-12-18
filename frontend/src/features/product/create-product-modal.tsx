@@ -94,7 +94,7 @@ export default function CreateProductModal() {
           Create Product
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Create New Product</DialogTitle>
           <DialogDescription>
@@ -102,8 +102,8 @@ export default function CreateProductModal() {
             information.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="space-y-4 py-4 overflow-y-auto thin-scrollbar flex-1">
             <div className="space-y-2">
               <Label htmlFor="create-title">Title</Label>
               <Input
@@ -146,7 +146,9 @@ export default function CreateProductModal() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="create-stock">Catalog Stock (Master Data) *</Label>
+                <Label htmlFor="create-stock">
+                  Catalog Stock (Master Data) *
+                </Label>
                 <Input
                   id="create-stock"
                   type="number"
@@ -159,7 +161,8 @@ export default function CreateProductModal() {
                   required
                 />
                 <p className="text-xs text-muted-foreground">
-                  Total available stock in catalog. Adding stock to warehouses will reduce this value.
+                  Total available stock in catalog. Adding stock to warehouses
+                  will reduce this value.
                 </p>
               </div>
               <div className="space-y-2">
