@@ -128,7 +128,9 @@ export default function WarehouseInfoCard({
                 ⚠️ Operation would exceed warehouse capacity
               </div>
             )}
-            {afterOperationStock !== null && afterOperationStock < 0 && (
+            {afterOperationStock !== null &&
+             afterOperationStock !== undefined &&
+             afterOperationStock < 0 && (
               <div className="text-xs text-yellow-600 font-medium mt-1">
                 ⚠️ Product stock cannot go below 0
               </div>

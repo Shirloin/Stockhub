@@ -242,9 +242,9 @@ export default function CreateStockInModal() {
                   warehouse={selectedWarehouse}
                   productStock={currentStock}
                   totalStock={totalStock}
-                  showAfterOperation={
+                  showAfterOperation={Boolean(
                     formData.quantity && parseInt(formData.quantity) > 0
-                  }
+                  )}
                   afterOperationStock={stockAfterReceive}
                   afterOperationCapacity={capacityAfterReceive}
                   wouldExceedCapacity={wouldExceedCapacity}

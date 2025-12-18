@@ -220,9 +220,9 @@ export default function CreateStockOutModal() {
                   warehouse={selectedWarehouse}
                   productStock={currentStock}
                   totalStock={totalStock}
-                  showAfterOperation={
+                  showAfterOperation={Boolean(
                     formData.quantity && parseInt(formData.quantity) > 0
-                  }
+                  )}
                   afterOperationStock={stockAfterShip}
                   afterOperationCapacity={capacityAfterShip}
                   afterOperationLabel="After Shipping"

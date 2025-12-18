@@ -161,7 +161,7 @@ export default function CreateStockAdjustmentModal() {
             resetForm();
             setOpen(false);
           },
-          onError: (error: any) => {
+          onError: (error: Error) => {
             toast.error("Failed to record adjustment", {
               description: error.message || "An error occurred",
             });
@@ -253,9 +253,9 @@ export default function CreateStockAdjustmentModal() {
                   warehouse={selectedWarehouse}
                   productStock={currentProductStock}
                   totalStock={totalStock}
-                  showAfterOperation={
+                  showAfterOperation={Boolean(
                     formData.quantity && parseInt(formData.quantity) !== 0
-                  }
+                  )}
                   afterOperationStock={stockAfterAdjustment}
                   afterOperationCapacity={capacityAfterAdjustment}
                   wouldExceedCapacity={wouldExceedCapacity}
